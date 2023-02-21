@@ -66,6 +66,10 @@ def pc_fiji_count(args):
     if args.scratch:
         config['npc']['scratch'] = args.scratch
     
+    # circularity
+    if args.circularity_min:
+        config['npc']['circularity_min'] = str(float(args.circularity_min))
+
     #### 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -144,10 +148,17 @@ def pc_fiji_count(args):
             pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))            
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
             sns.set_style=("ticks")
-            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=70, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=30, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
             sns.despine(top=False, right=False, left=False, bottom=False)
-            g.set_axis_labels(x_var="Diameter $(µm)$", y_var="Number frequency (%)",)
-            g.ax.set_xlim(0.01, 10000)
+            g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
+            # set x min and max
+            _min_x = 0.01
+            if args.graph_min_x:
+                _min_x = float(args.graph_min_x)
+            _max_x = 10000
+            if args.graph_max_x:
+                _max_x = float(args.graph_max_x)
+            g.ax.set_xlim(_min_x, _max_x)
             g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
             g.savefig(output_figure)
             
@@ -171,7 +182,7 @@ def main(arguments=sys.argv[1:]):
     subparsers = parser.add_subparsers(title='sub command', help='sub command help')
     #####################################
     pc_fiji = subparsers.add_parser(
-        'pc-fiji', description='Particle counting using Fiji', help='Run particule counting using Fiji and postprocessing',
+        'pc-fiji', description='Particle counting using Fiji', help='Run particle counting using Fiji and postprocessing',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     pc_fiji.set_defaults(func=pc_fiji_count)
     pc_fiji.add_argument('--fiji-path', help='Fiji path', required=False, type=str)

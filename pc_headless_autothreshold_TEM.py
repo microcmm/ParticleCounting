@@ -3,12 +3,18 @@ from distutils import extension
 from ij import IJ, ImagePlus, measure
 import os, ConfigParser, sys, time, math, ast
 import os.path
-from ij.process import ImageConverter, ImageProcessor
+from ij.process import ImageConverter, ImageProcessor, ImageStatistics
 from ij.gui import Roi
 from ij.plugin.filter import ParticleAnalyzer
 from java.lang import Double
+import logging
+
+
 ######################################################################
 ######################################################################
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
+logger = logging.getLogger(__name__)
 
 def get_files(folder, ending='.tif'):
     """
@@ -17,17 +23,48 @@ def get_files(folder, ending='.tif'):
     _files = os.listdir(folder)
     return [ item for item in _files if item.endswith(ending) ]
 
+def should_ignore(hist_vals):
+                       
+    max_val = max(hist_vals)
+    idx_max = hist_vals.index(max_val)
+            
+    ignore = False
+    if (idx_max == len(hist_vals)-1):
+        ignore = True
+    
+    return ignore
 
 def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity):
     """
     Process file
     """
     print ("Processing:", image)
+    
+    
     # make sure the image has a txt file as metadata
     if os.path.exists(os.path.join(input_path,image)):
+        
         _output_csv_file = os.path.join(output_path, os.path.splitext(image)[0] + '.csv')
         print ("Processing >>>>>>>>>>>>>>", os.path.join(input_path,image))
+        #print(test.should_ignore(os.path.join(input_path,image)))
+        
+        
         img_stack = IJ.openImage( os.path.join(input_path,image) )
+        #IJ.run(img_stack, "getHistogram(values, counts, nBins[, histMin, histMax])", "stack")
+        #IJ.getValue(img_stack, "Mode")
+        hist = img_stack.getStatistics(1043199, 1024).getHistogram()
+        #hist = img_stack.getAllStatistics().getHistogram()
+        logger.info (hist)
+        logger.info (should_ignore(hist))
+        if should_ignore(hist) == True:
+            logger.info("ignoring file: "+ image)
+            print ("ignoring file: ", image)
+            return
+        #IJ.run(img_stack, "ImageStatistics", "stack")
+        #logging.info(__dir__(measure))
+        #logging.info (img_stack ImageStatistics ip)
+        # IJ.run(img_stack, "Table", "stack")
+        
         if img_stack.getType() != ImagePlus.GRAY8:
             imgConverter = ImageConverter(img_stack)
             imgConverter.convertToGray8()
@@ -38,10 +75,19 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         newcal.pixelHeight = pixelheight
         img_stack.setGlobalCalibration(None)
         img_stack.setCalibration(newcal)
-        IJ.run( img_stack, "Smooth", "stack" )
-        IJ.run( img_stack, "Sharpen", "stack" )
-        IJ.setAutoThreshold(img_stack, "Default")
+        #IJ.run( img_stack, "8-bit", "stack")
+        #IJ.run( img_stack, "Options...", "iterations=1 count=1 black")
+       
+        IJ.run(img_stack, "Smooth", "stack")
+        IJ.run( img_stack, "Smooth", "stack")
+        IJ.run(img_stack, "Mean...", "radius=25")
+        #IJ.run( img_stack, "Enhance Contrast...", "saturated=4 normalize")
+        #IJ.run( img_stack, "Smooth", "stack" )
+        IJ.run(img_stack, "adaptiveThr ", "using=Mean from=4758 then=23")
+        IJ.setAutoThreshold(img_stack, "Default no-reset")
         IJ.run( img_stack, "Convert to Mask", "calculate black")
+        IJ.run( img_stack, "Watershed", "stack")
+        #IJ.run( img_stack, "Find Edges", "stack")
         img_stack.getProcessor().invert()
         # img_stack.show()
 
@@ -74,11 +120,13 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
     else:
         print (">>>>>File ", image, " does not exist")
 
+logger.info ("pina")
 ### first read config file here
 if not os.path.exists(CONFIG):
     print ("[ERROR] " + CONFIG + " not exist")
     os._exit(1)
 ###
+logger.info(CONFIG)
 config = ConfigParser.ConfigParser()
 config.readfp(open(CONFIG))
 # now read the parameters
@@ -98,9 +146,13 @@ minparticlesize=config.getfloat("npc", "minparticlesize")
 fextension=str(config.get("npc", "fextension"))
 images = get_files(input_path, '.' + fextension)
 excluded = ast.literal_eval(config.get("npc", "excluded"))
+logger.info(config)
 min_circularity=config.getfloat("npc", "circularity_min")
 excluded_files = [ i+"."+fextension for i in excluded ]
+logger.info ("banana")
 ### now run it
 for image in images:
     if not image in excluded_files:
         process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity)
+logger.info ("apple")
+IJ.run("Quit")

@@ -9,13 +9,16 @@ import getpass, subprocess, uuid
 from distutils.dir_util import copy_tree
 import shutil
 import configparser
+import PIL
 
 import pandas as pd
 import seaborn as sns
 import matplotlib as plt
 import matplotlib.ticker as mticker
 
-logging.basicConfig(level=logging.DEBUG,
+
+
+logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -66,6 +69,10 @@ def pc_fiji_count(args):
     if args.scratch:
         config['npc']['scratch'] = args.scratch
     
+    # circularity
+    if args.circularity_min:
+        config['npc']['circularity_min'] = str(float(args.circularity_min))
+
     #### 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -103,11 +110,14 @@ def pc_fiji_count(args):
     with open(config_file, 'w', encoding='utf-8') as configfile:
         config.write(configfile)
 
-    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold.py")
-    
-    cmd = f"{fiji_path} --ij2 --headless --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" 2>&1"
+    logger.info ("peach")
+    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold_TEM.py")
+    logger.info ("star")
+    cmd = f"{fiji_path} --ij2 --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" " #2>&1"
+    #cmd = f"{fiji_path} --ij2 --headless --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" " #2>&1"
     logger.info(cmd)
     ret = os.system(cmd)
+    logger.info ("kiwi")
     if ret == 0:
         if not args.fields:
             logger.info("No field provided")
@@ -129,7 +139,7 @@ def pc_fiji_count(args):
                     _label = os.path.splitext(_file)[0]
                     logger.info(f"Reading file {_file}")
                     if f"Outputs_{dataset_name}.csv" in _file:
-                        logger.info("Ignoreing as it is the output")
+                        logger.info("Ignoring as it is the output")
                         continue
                     with open(os.path.join(output_path, _file)) as csvfile:
                         reader = csv.DictReader(csvfile)
@@ -144,10 +154,17 @@ def pc_fiji_count(args):
             pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))            
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
             sns.set_style=("ticks")
-            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=70, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=50, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
             sns.despine(top=False, right=False, left=False, bottom=False)
-            g.set_axis_labels(x_var="Diameter $(µm)$", y_var="Number frequency (%)",)
-            g.ax.set_xlim(0.01, 10000)
+            g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
+            # set x min and max
+            _min_x = 0.01
+            if args.graph_min_x:
+                _min_x = float(args.graph_min_x)
+            _max_x = 10000
+            if args.graph_max_x:
+                _max_x = float(args.graph_max_x)
+            g.ax.set_xlim(_min_x, _max_x)
             g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
             g.savefig(output_figure)
             
@@ -166,12 +183,12 @@ def pc_fiji_count(args):
 
 def main(arguments=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        prog='pc_main',
+        prog='pc_main_TEM',
         description='Particle counting main')
     subparsers = parser.add_subparsers(title='sub command', help='sub command help')
     #####################################
     pc_fiji = subparsers.add_parser(
-        'pc-fiji', description='Particle counting using Fiji', help='Run particule counting using Fiji and postprocessing',
+        'pc-fiji', description='Particle counting using Fiji', help='Run particle counting using Fiji and postprocessing',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     pc_fiji.set_defaults(func=pc_fiji_count)
     pc_fiji.add_argument('--fiji-path', help='Fiji path', required=False, type=str)
@@ -190,6 +207,9 @@ def main(arguments=sys.argv[1:]):
                         choices=["Area","Mean","StdDev","Mode","Min","Max","X","Y","XM","YM","Perim.","BX","BY","Width","Height", \
                                 "Major","Minor","Angle","Circ.","Feret","IntDen","Median","Skew","Kurt","%Area","RawIntDen",\
                                 "FeretX","FeretY","FeretAngle","MinFeret","AR","Round","Solidity"])
+    pc_fiji.add_argument('--graph-min-x', help='minimum value for graph x axis', type=float, default=0.01)
+    pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
+    pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
 
     args = parser.parse_args(arguments)
     return args.func(args)
@@ -197,3 +217,4 @@ def main(arguments=sys.argv[1:]):
 if __name__ == "__main__":
     main()
     
+
