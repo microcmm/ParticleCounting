@@ -113,7 +113,7 @@ def pc_fiji_count(args):
         config.write(configfile)
 
     logger.info ("peach")
-    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold_TEM.py")
+    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold.py")
     #logger.info(script_location)
     #logger.info(fiji_path)
     #logger.info(config_file)

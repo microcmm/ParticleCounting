@@ -1,10 +1,10 @@
 #@ String CONFIG
-from distutils import extension
+#from distutils import extension
 from ij import IJ, ImagePlus, measure
 import os, ConfigParser, sys, time, math, ast
 import os.path
-from ij.process import ImageConverter, ImageProcessor, ImageStatistics
-from ij.gui import Roi
+from ij.process import ImageConverter#, ImageProcessor, ImageStatistics
+#from ij.gui import Roi
 from ij.plugin.filter import ParticleAnalyzer
 from java.lang import Double
 import logging
@@ -59,12 +59,14 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         if should_ignore(hist) == True:
             logger.info("ignoring file: "+ image)
             print ("ignoring file: ", image)
+           # time.sleep(20)
             return
         #IJ.run(img_stack, "ImageStatistics", "stack")
         #logging.info(__dir__(measure))
         #logging.info (img_stack ImageStatistics ip)
         # IJ.run(img_stack, "Table", "stack")
-        
+        print(input_path)
+        print(img_stack.getType())  
         if img_stack.getType() != ImagePlus.GRAY8:
             imgConverter = ImageConverter(img_stack)
             imgConverter.convertToGray8()
@@ -121,8 +123,10 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         print (">>>>>File ", image, " does not exist")
 
 logger.info ("pina")
+logger.info(os.path.exists(CONFIG))
 ### first read config file here
 if not os.path.exists(CONFIG):
+    logger.info("[ERROR] " + CONFIG + " not exist")
     print ("[ERROR] " + CONFIG + " not exist")
     os._exit(1)
 ###
@@ -134,6 +138,7 @@ input_path = str(config.get("npc", "input_path")).strip()
 if not os.path.exists(input_path):
     print ("[ERROR] Input path" + input_path + " not exist")
     os._exit(1)
+logger.info(input_path)
 output_path = str(config.get("npc", "output_path")).strip()
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -145,6 +150,7 @@ pixelunit=str(config.get("npc", "pixelunit"))
 minparticlesize=config.getfloat("npc", "minparticlesize")
 fextension=str(config.get("npc", "fextension"))
 images = get_files(input_path, '.' + fextension)
+logger.info(len(images))
 excluded = ast.literal_eval(config.get("npc", "excluded"))
 logger.info(config)
 min_circularity=config.getfloat("npc", "circularity_min")
