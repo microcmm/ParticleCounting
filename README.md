@@ -3,11 +3,11 @@ To run headless:
 
 Linux:
 ======
-python3 pc_main.py pc-fiji --fiji-path /home/hoangnguyen177/bin/ImageJ-linux64 --pixel-width 0.1108 --pixel-height 0.1108 --pixel-unit μm --min-particle-size 3 --input-path /home/hoangnguyen177/Desktop/working/RCC/CMM_Projects_data/NP_Characterisation_20220519/NP1/ --output-path /home/hoangnguyen177/Desktop/working/RCC/CMM_Projects/OlympusDSX1000-output-2022-05-20/NP1 --file-extension tiff --ignored stiched scale --field Area Feret FeretX FeretY FeretAngle MinFeret Angle AR Round "Circ."
+python3 pc_main.py pc-fiji --fiji-path /home/hoangnguyen177/bin/ImageJ-linux64 --pixel-width 0.055 --pixel-height 0.055 --pixel-unit μm --min-particle-size 3 --input-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Inputs\DSX\Nikky\POM05\4690x\Stitch individual_POM05_05_tif" --output-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Outputs\DSX1000\Nikky\POM05\4690x_8" --file-extension tiff --ignored stitched scale --field Area Feret FeretX FeretY FeretAngle MinFeret Angle AR Round "Circ." --threshold "164" --subtract "12" --graph-min-x "0.1" --graph-bins-n-Feret "20" --graph-bins-n-AR "25" --circularity-min "0.05"
 
 Windows:
 ========
-python3 .\pc_main.py pc-fiji --fiji-path C:\fiji\ImageJ-win64.exe --pixel-width 0.1108 --pixel-height 0.1108 --pixel-unit µm --min-particle-size 3 --input-path "C:\Users\Ngoc Thao\Downloads\hoang-downloads\npc\test" --output-path "C:\Users\Ngoc Thao\Downloads\hoang-downloads\npc\test\output" --file-extension tiff --ignored stiched scale --field Area Feret FeretX FeretY FeretAngle MinFeret Angle AR Round "Circ."
+python3 .\pc_main.py pc-fiji --fiji-path C:\fiji\ImageJ-win64.exe --pixel-width 0.055 --pixel-height 0.055 --pixel-unit μm --min-particle-size 3 --input-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Inputs\DSX\Nikky\POM05\4690x\Stitch individual_POM05_05_tif" --output-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Outputs\DSX1000\Nikky\POM05\4690x_8" --file-extension tiff --ignored stitched scale --field Area Feret FeretX FeretY FeretAngle MinFeret Angle AR Round "Circ." --threshold "164" --subtract "12" --graph-min-x "0.1" --graph-bins-n-Feret "20" --graph-bins-n-AR "25" --circularity-min "0.05"
 
 To run with display:
 --------------------
