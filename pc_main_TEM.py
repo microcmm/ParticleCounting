@@ -163,7 +163,10 @@ def pc_fiji_count(args):
             pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))            
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
             sns.set_style=("ticks")
-            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=50, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            # set bins number for graph
+            if args.graph_bins_n:
+                 bins = float(args.graph_bins_n)
+            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=bins, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
             sns.despine(top=False, right=False, left=False, bottom=False)
             g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
             # set x min and max
@@ -218,6 +221,7 @@ def main(arguments=sys.argv[1:]):
                                 "FeretX","FeretY","FeretAngle","MinFeret","AR","Round","Solidity"])
     pc_fiji.add_argument('--graph-min-x', help='minimum value for graph x axis', type=float, default=0.01)
     pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
+    pc_fiji.add_argument('--graph-bins-n', help='number of bins to use in frequency plot', type=float, default=20)
     pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
 
     args = parser.parse_args(arguments)

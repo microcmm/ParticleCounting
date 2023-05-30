@@ -68,7 +68,12 @@ def pc_fiji_count(args):
     # params['scratch'] = True
     if args.scratch:
         config['npc']['scratch'] = args.scratch
-    
+    # thresholding
+    if args.threshold:
+        logger.info(args.threshold)
+        config["npc"]["threshold"] = str(args.threshold)
+    if args.subtract:
+        config["npc"]["subtract"] = str(args.subtract)
     # circularity
     if args.circularity_min:
         config['npc']['circularity_min'] = str(float(args.circularity_min))
@@ -113,7 +118,7 @@ def pc_fiji_count(args):
         config.write(configfile)
 
     logger.info ("peach")
-    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold.py")
+    script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold_OM.py")
     #logger.info(script_location)
     #logger.info(fiji_path)
     #logger.info(config_file)
@@ -158,12 +163,15 @@ def pc_fiji_count(args):
                                 _row_values = _row_values + [contentRow[_field]]
                             output_writer.writerow(_row_values)
            
-            # figure
+            # figure_diameter
             pc_df = pd.read_csv(output_csv)
-            pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))            
+            pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summaryFeret.csv'))            
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
             sns.set_style=("ticks")
-            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=50, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            # set bins number for graph
+            if args.graph_bins_n_Feret:
+                 bins = int(args.graph_bins_n_Feret)
+            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=bins, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
             sns.despine(top=False, right=False, left=False, bottom=False)
             g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
             # set x min and max
@@ -176,6 +184,21 @@ def pc_fiji_count(args):
             g.ax.set_xlim(_min_x, _max_x)
             g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
             g.savefig(output_figure)
+            
+            # figure_AR
+            pc_df = pd.read_csv(output_csv)
+            pc_df.AR.describe(percentiles=[.01, .1, .5, .9, .99]).to_csv(os.path.join(output_path, 'summaryAR.csv'))            
+            # plot for density distribution, despine top, bottom, L, R, all set to false to give border
+            sns.set_style=("ticks")
+            # set bins number for graph
+            if args.graph_bins_n_AR:
+                 binsAR = int(args.graph_bins_n_AR)
+            g = sns.displot(pc_df, x="AR", kind="hist", stat="percent", element="poly", log_scale=(False), fill=(False), color="black", bins=binsAR, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            sns.despine(top=False, right=False, left=False, bottom=False)
+            g.set_axis_labels(x_var="Aspect ratio", y_var="Number frequency (%)",)
+            #g.ax.set_xlim(0,5)
+            g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+            g.savefig(os.path.join(output_path, "Aspect_ratio.png"))
             
 
         ### remove input_path and move output_path to output, if scrach is used
@@ -192,7 +215,7 @@ def pc_fiji_count(args):
 
 def main(arguments=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        prog='pc_main_TEM',
+        prog='pc_main_OM',
         description='Particle counting main')
     subparsers = parser.add_subparsers(title='sub command', help='sub command help')
     #####################################
@@ -205,6 +228,8 @@ def main(arguments=sys.argv[1:]):
     pc_fiji.add_argument('--scratch', help='scratch', type=eval, choices=[True, False],default='False')
     pc_fiji.add_argument('--output-path', help='output path', required=False, type=str)
     pc_fiji.add_argument('--keep-cropped-files', help='keeping cropped files', type=eval, choices=[True, False],default='True')
+    pc_fiji.add_argument('--threshold', help='set thresholding values', type=int, default=183)
+    pc_fiji.add_argument('--subtract', help='set thresholding value subtraction', type=int, default=6)
     pc_fiji.add_argument('--keep-threshold-files', help='keeping thresholded files', type=eval, choices=[True, False],default='True')    
     pc_fiji.add_argument('--pixel-width', help='pixel width', type=float)
     pc_fiji.add_argument('--pixel-height', help='pixel height', type=float)
@@ -218,6 +243,8 @@ def main(arguments=sys.argv[1:]):
                                 "FeretX","FeretY","FeretAngle","MinFeret","AR","Round","Solidity"])
     pc_fiji.add_argument('--graph-min-x', help='minimum value for graph x axis', type=float, default=0.01)
     pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
+    pc_fiji.add_argument('--graph-bins-n-Feret', help='number of bins to use in frequency plot', type=float, default=20)
+    pc_fiji.add_argument('--graph-bins-n-AR', help='number of bins to use in frequency plot', type=float, default=20)
     pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
 
     args = parser.parse_args(arguments)
