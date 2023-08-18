@@ -72,6 +72,8 @@ def pc_fiji_count(args):
     # circularity
     if args.circularity_min:
         config['npc']['circularity_min'] = str(float(args.circularity_min))
+    if args.circularity_max:
+        config['npc']['circularity_max'] = str(float(args.circularity_max))
 
     #### 
     if not os.path.exists(output_path):
@@ -223,6 +225,7 @@ def main(arguments=sys.argv[1:]):
     pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
     pc_fiji.add_argument('--graph-bins-n', help='number of bins to use in frequency plot', type=float, default=20)
     pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
+    pc_fiji.add_argument('--circularity-max', help='circularity upper limit', type=float, default=1)
 
     args = parser.parse_args(arguments)
     return args.func(args)

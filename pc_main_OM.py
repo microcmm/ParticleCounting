@@ -75,8 +75,10 @@ def pc_fiji_count(args):
     if args.subtract:
         config["npc"]["subtract"] = str(args.subtract)
     # circularity
-    if args.circularity_min:
+    if hasattr(args, 'circularity_min'): #args.circularity_min:
         config['npc']['circularity_min'] = str(float(args.circularity_min))
+    if args.circularity_max:
+        config['npc']['circularity_max'] = str(float(args.circularity_max))
 
     #### 
     if not os.path.exists(output_path):
@@ -88,7 +90,7 @@ def pc_fiji_count(args):
     config['npc']['pixelwidth'] = str(float(args.pixel_width))
     config['npc']['pixelheight'] = str(float(args.pixel_height))
     config['npc']['pixelunit'] = args.pixel_unit
-    if not args.min_particle_size:
+    if not hasattr(args, 'min_particle_size'):
         config['npc']['minparticlesize'] = '0'
     else:
         config['npc']['minparticlesize'] = str(float(args.min_particle_size))
@@ -245,7 +247,8 @@ def main(arguments=sys.argv[1:]):
     pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
     pc_fiji.add_argument('--graph-bins-n-Feret', help='number of bins to use in frequency plot', type=float, default=20)
     pc_fiji.add_argument('--graph-bins-n-AR', help='number of bins to use in frequency plot', type=float, default=20)
-    pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
+    pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0)
+    pc_fiji.add_argument('--circularity-max', help='circularity upper limit', type=float, default=1)
 
     args = parser.parse_args(arguments)
     return args.func(args)

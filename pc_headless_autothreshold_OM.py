@@ -34,7 +34,7 @@ def should_ignore(hist_vals):
     
     return ignore
 
-def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity, threshold, subtract):
+def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity, max_circularity, threshold, subtract):
     """
     Process file
     """
@@ -88,7 +88,7 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         #IJ.run( img_stack, "Smooth", "stack" )
         thr_inputs= "using=Mean from="+str(threshold)+" then="+str(subtract)
         logger.info (thr_inputs)
-        IJ.run(img_stack, "adaptiveThr ",thr_inputs )
+        #IJ.run(img_stack, "adaptiveThr ",thr_inputs )
         IJ.setAutoThreshold(img_stack, "Default no-reset")
         IJ.run( img_stack, "Convert to Mask", "calculate black")
         #IJ.run( img_stack, "Watershed", "stack")
@@ -110,7 +110,7 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
                                minparticlesize,
                                Double.POSITIVE_INFINITY,
                                min_circularity,
-                               1.0 )
+                               max_circularity )
 
             pa.setHideOutputImage(True)
             if pa.analyze(img_stack, stack.getProcessor(i)):
@@ -159,11 +159,12 @@ logger.info(len(images))
 excluded = ast.literal_eval(config.get("npc", "excluded"))
 logger.info(config)
 min_circularity=config.getfloat("npc", "circularity_min")
+max_circularity=config.getfloat("npc", "circularity_max")
 excluded_files = [ i+"."+fextension for i in excluded ]
 logger.info ("banana")
 ### now run it
 for image in images:
     if not image in excluded_files:
-        process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity, threshold, subtract)
+        process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity, max_circularity, threshold, subtract)
 logger.info ("apple")
 IJ.run("Quit")
