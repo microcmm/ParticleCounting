@@ -167,7 +167,7 @@ def pc_fiji_count(args):
            
             # figure_diameter
             pc_df = pd.read_csv(output_csv)
-            pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summaryFeret.csv'))            
+            pc_df.Feret.describe(percentiles=[.01, .1, .5, .9, .99]).to_csv(os.path.join(output_path, 'summaryFeret.csv'))            
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
             sns.set_style=("ticks")
             # set bins number for graph
@@ -177,7 +177,7 @@ def pc_fiji_count(args):
             sns.despine(top=False, right=False, left=False, bottom=False)
             g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
             # set x min and max
-            _min_x = 0.01
+            _min_x = 0.001
             if args.graph_min_x:
                 _min_x = float(args.graph_min_x)
             _max_x = 10000
@@ -185,7 +185,29 @@ def pc_fiji_count(args):
                 _max_x = float(args.graph_max_x)
             g.ax.set_xlim(_min_x, _max_x)
             g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
-            g.savefig(output_figure)
+            g.savefig(os.path.join(output_path, "feret_diameter.png"))
+            
+            # figure_min_diameter
+            pc_df = pd.read_csv(output_csv)
+            pc_df.MinFeret.describe(percentiles=[.01, .1, .5, .9, .99]).to_csv(os.path.join(output_path, 'summaryminFeret.csv'))            
+            # plot for density distribution, despine top, bottom, L, R, all set to false to give border
+            sns.set_style=("ticks")
+            # set bins number for graph
+            if args.graph_bins_n_Feret:
+                 bins = int(args.graph_bins_n_Feret)
+            g = sns.displot(pc_df, x="MinFeret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=bins, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            sns.despine(top=False, right=False, left=False, bottom=False)
+            g.set_axis_labels(x_var=f"min_Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
+            # set x min and max
+            _min_x = 0.001
+            if args.graph_min_x:
+                _min_x = float(args.graph_min_x)
+            _max_x = 10000
+            if args.graph_max_x:
+                _max_x = float(args.graph_max_x)
+            g.ax.set_xlim(_min_x, _max_x)
+            g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+            g.savefig(os.path.join(output_path, "Min_diameter.png"))
             
             # figure_AR
             pc_df = pd.read_csv(output_csv)

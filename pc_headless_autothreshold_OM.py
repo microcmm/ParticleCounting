@@ -82,15 +82,20 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
        
         #IJ.run(img_stack, "Smooth", "stack")
         #IJ.run( img_stack, "Smooth", "stack")
+        IJ.run( img_stack, "Brightness/Contrast...", "resetMinAndMax()")
         IJ.run(img_stack, "Gaussian Blur...", "sigma=2")
+        #IJ.run(img_stack, "Auto Local Threshold", "method=Bernsen radius=15 parameter_1=0 parameter_2=0 white")
         #IJ.run(img_stack, "Mean...", "radius=25")
         #IJ.run( img_stack, "Enhance Contrast...", "saturated=4 normalize")
         #IJ.run( img_stack, "Smooth", "stack" )
         thr_inputs= "using=Mean from="+str(threshold)+" then="+str(subtract)
         logger.info (thr_inputs)
         #IJ.run(img_stack, "adaptiveThr ",thr_inputs )
-        IJ.setAutoThreshold(img_stack, "Default no-reset")
-        IJ.run( img_stack, "Convert to Mask", "calculate black")
+        IJ.setAutoThreshold(img_stack, "Default dark no-reset")
+        IJ.setRawThreshold(img_stack, 0, 72)
+        #( img_stack, "Threshold...", "0-88")
+        IJ.run( img_stack, "Convert to Mask", "")
+        IJ.run(img_stack, "Invert", "")
         #IJ.run( img_stack, "Watershed", "stack")
         #IJ.run( img_stack, "Find Edges", "stack")
         img_stack.getProcessor().invert()
@@ -104,7 +109,7 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
             stack.getProcessor(i).invert()
             table = measure.ResultsTable()
             pa = ParticleAnalyzer( #ParticleAnalyzer.SHOW_OUTLINES, # ParticleAnalyzer.BARE_OUTLINES, # 
-                               ParticleAnalyzer.SHOW_OUTLINES,
+                               ParticleAnalyzer.SHOW_OUTLINES|ParticleAnalyzer.EXCLUDE_EDGE_PARTICLES|ParticleAnalyzer.INCLUDE_HOLES,
                                measure.Measurements.ALL_STATS,
                                table,
                                minparticlesize,
