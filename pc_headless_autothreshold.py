@@ -52,6 +52,7 @@ def get_files(folder, ending='.tif'):
 
 
 def should_ignore(hist_vals):
+
     max_val = max(hist_vals)
     idx_max = hist_vals.index(max_val)
 
@@ -72,7 +73,28 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
     if os.path.exists(os.path.join(input_path, image)):
         _output_csv_file = os.path.join(output_path, os.path.splitext(image)[0] + '.csv')
         print("Processing >>>>>>>>>>>>>>", os.path.join(input_path, image))
+        #print(test.should_ignore(os.path.join(input_path,image)))
+
         img_stack = IJ.openImage(os.path.join(input_path, image))
+
+        # #IJ.run(img_stack, "getHistogram(values, counts, nBins[, histMin, histMax])", "stack")
+        # #IJ.getValue(img_stack, "Mode")
+        # hist = img_stack.getStatistics(1043199, 1024).getHistogram()
+        # #hist = img_stack.getAllStatistics().getHistogram()
+        # logger.info (hist)
+        # logger.info (should_ignore(hist))
+        # if should_ignore(hist) == True:
+        #     logger.info("ignoring file: "+ image)
+        #     print ("ignoring file: ", image)
+        #    # time.sleep(20)
+        #     return
+        # #IJ.run(img_stack, "ImageStatistics", "stack")
+        # #logging.info(__dir__(measure))
+        # #logging.info (img_stack ImageStatistics ip)
+        # # IJ.run(img_stack, "Table", "stack")
+        # print(input_path)
+        # print(img_stack.getType())
+
         if img_stack.getType() != ImagePlus.GRAY8:
             imgConverter = ImageConverter(img_stack)
             imgConverter.convertToGray8()

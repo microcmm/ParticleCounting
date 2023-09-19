@@ -54,6 +54,7 @@ class ParticleCounter:
         self._script_location = os.path.join(os.getcwd(), script_name)
         self._log_file = None
         self._config_file = None
+        self._feret_bins = 50
 
         self._config = configparser.ConfigParser()
         self._config["npc"] = self._cfg_args
@@ -119,7 +120,10 @@ class ParticleCounter:
         if args.ignored:
             self._cfg_args['excluded'] = str(args.ignored)
 
+        logger.info("melon")
         print(args.scratch)
+        logger.info("passionfruit")
+
         # params['scratch'] = True
         if args.scratch:
             self._cfg_args['scratch'] = args.scratch
@@ -147,10 +151,15 @@ class ParticleCounter:
         with open(self._config_file, 'w', encoding='utf-8') as configfile:
             self._config.write(configfile)
 
+        logger.info("star")
+
         # run the fiji command
         cmd = FIJI_CMD.format(self._fiji_path, self._script_location, self._config_file, self._log_file)
         logger.info(cmd)
+
+        logger.info("dragonfruit")
         ret = os.system(cmd)
+        logger.info("strawberry")
 
         self.handle_command_response(args, ret)
 
@@ -210,7 +219,7 @@ class ParticleCounter:
         # plot for density distribution, despine top, bottom, L, R, all set to false to give border
         sns.set_style = "ticks"
         g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=True,
-                        fill=False, color="black", bins=30, height=3.5, aspect=1,
+                        fill=False, color="black", bins=self._feret_bins, height=3.5, aspect=1,
                         facet_kws=dict(margin_titles=True), )
         sns.despine(top=False, right=False, left=False, bottom=False)
         g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)", )
@@ -242,6 +251,8 @@ def main(arguments=sys.argv[1:]):
         help='Run particle counting using Fiji and postprocessing',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     pc_fiji.set_defaults(func=pc.pc_fiji_count)
+    pc_fiji.add_argument('--sequence-type', help='Sequence type', required=False, type=str,
+                         choices=["OM", "TEM", ""])
     pc_fiji.add_argument('--fiji-path', help='Fiji path', required=False, type=str)
     pc_fiji.add_argument('--input-path', help='input path', required=True, type=str)
     pc_fiji.add_argument('--scratch', help='scratch', type=eval, choices=[True, False], default='False')
