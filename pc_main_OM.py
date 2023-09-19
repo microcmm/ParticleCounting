@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# [12:06 pm] Alison White
+#
+#  run .\pc_main_OM.py pc-fiji --fiji-path C:\Users\uqatask1\fiji\ImageJ-win64.exe --pixel-width 0.00484 --pixel-height 0.00484 --pixel-unit μm --min-particle-size 0 --input-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Inputs\Hitachi 7700\Annie" --output-path "C:\Users\uqatask1\Desktop\CMM_Projects_Data\Outputs\Hitachi 7700\Annie_j" --file-extension tif --ignored stitched scale --field Area Feret FeretX FeretY FeretAngle MinFeret Angle AR Round "Circ." --threshold "164" --subtract "12" --graph-min-x "0.1" --graph-bins-n-Feret "20" --graph-bins-n-AR "25" --circularity-min "0" --circularity-max "0.4"
+
 import sys, csv
 import argparse
 import logging
@@ -16,11 +21,10 @@ import seaborn as sns
 import matplotlib as plt
 import matplotlib.ticker as mticker
 
-
-
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
 logger = logging.getLogger(__name__)
+
 
 def get_scratch():
     """
@@ -29,9 +33,11 @@ def get_scratch():
     if "SCRATCH_DIR" in os.environ:
         return os.environ['SCRATCH_DIR']
     else:
-        myUsername = str(getpass.getuser())## this is not a reliable way to get username
-        myWienergroup = subprocess.check_output("groups | tr ' ' '\n' | grep 'wiener' | sed 's/wiener-//g' | head -1", shell=True).decode("utf-8").strip()
+        myUsername = str(getpass.getuser())  ## this is not a reliable way to get username
+        myWienergroup = subprocess.check_output("groups | tr ' ' '\n' | grep 'wiener' | sed 's/wiener-//g' | head -1",
+                                                shell=True).decode("utf-8").strip()
         return os.path.join("/scratch", myWienergroup, myUsername)
+
 
 def pc_fiji_count(args):
     """
@@ -58,7 +64,8 @@ def pc_fiji_count(args):
     if args.output_path:
         config['npc']['output_path'] = output_path = args.output_path
     else:
-        config['npc']['output_path'] = output_path = os.path.join(input_path, 'output_' + datetime.now().strftime("%m_%d_%Y"))
+        config['npc']['output_path'] = output_path = os.path.join(input_path,
+                                                                  'output_' + datetime.now().strftime("%m_%d_%Y"))
     config['npc']['keep_cropped_files'] = 'true'
     if args.keep_cropped_files:
         config['npc']['keep_cropped_files'] = str(args.keep_cropped_files)
@@ -68,7 +75,7 @@ def pc_fiji_count(args):
     # params['scratch'] = True
     if args.scratch:
         config['npc']['scratch'] = args.scratch
-    
+
     # circularity
     if args.circularity_min:
         config['npc']['circularity_min'] = str(float(args.circularity_min))
@@ -87,7 +94,7 @@ def pc_fiji_count(args):
         config['npc']['minparticlesize'] = '0'
     else:
         config['npc']['minparticlesize'] = str(float(args.min_particle_size))
-    
+
     if not args.file_extension:
         config['npc']['fextension'] = 'tiff'
     else:
@@ -98,7 +105,7 @@ def pc_fiji_count(args):
 
     #### run the thing
     logger.info("melon")
-    logger.info (args.scratch)
+    logger.info(args.scratch)
     logger.info("passionfruit")
     if args.scratch:
         # find the user scratch place
@@ -112,21 +119,21 @@ def pc_fiji_count(args):
     with open(config_file, 'w', encoding='utf-8') as configfile:
         config.write(configfile)
 
-    logger.info ("peach")
+    logger.info("peach")
     script_location = os.path.join(os.getcwd(), "pc_headless_autothreshold.py")
-    #logger.info(script_location)
-    #logger.info(fiji_path)
-    #logger.info(config_file)
-    #logger.info(log_file)
-    logger.info ("star")
-    #logger.info(str(configfile))
-    cmd = f"{fiji_path} --ij2 --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" "#2>&1"
-    #cmd = f"{fiji_path} --ij2 --headless --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" " #2>&1"
-    #logger.info(cmd)
+    # logger.info(script_location)
+    # logger.info(fiji_path)
+    # logger.info(config_file)
+    # logger.info(log_file)
+    logger.info("star")
+    # logger.info(str(configfile))
+    cmd = f"{fiji_path} --ij2 --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" "  # 2>&1"
+    # cmd = f"{fiji_path} --ij2 --headless --run \"{script_location}\" \"CONFIG='{config_file}'\" > \"{log_file}\" " #2>&1"
+    # logger.info(cmd)
     logger.info("dragonfruit")
     ret = os.system(cmd)
     logger.info("strawberry")
-    logger.info ("kiwi")
+    logger.info("kiwi")
     if ret == 0:
         if not args.fields:
             logger.info("No field provided")
@@ -136,14 +143,14 @@ def pc_fiji_count(args):
             output_file_without_ext = os.path.join(output_path, f"Outputs_{dataset_name}")
             output_csv = f"{output_file_without_ext}.csv"
             output_figure = f"{output_file_without_ext}.png"
-        
+
             with open(output_csv, 'w', newline='') as csvfile:
                 output_writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
                 _all_fields = ["Label"] + args.fields
                 output_writer.writerow(_all_fields)
                 # go thru all the .csv files in output, get them, and collect to a xlsx file
                 _filesInOutput = os.listdir(output_path)
-                _files = [ item for item in _filesInOutput if item.endswith('.csv') ]
+                _files = [item for item in _filesInOutput if item.endswith('.csv')]
                 for _file in _files:
                     _label = os.path.splitext(_file)[0]
                     logger.info(f"Reading file {_file}")
@@ -157,15 +164,17 @@ def pc_fiji_count(args):
                             for _field in args.fields:
                                 _row_values = _row_values + [contentRow[_field]]
                             output_writer.writerow(_row_values)
-           
+
             # figure
             pc_df = pd.read_csv(output_csv)
-            pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))            
+            pc_df.Feret.describe(percentiles=[.1, .5, .9]).to_csv(os.path.join(output_path, 'summary.csv'))
             # plot for density distribution, despine top, bottom, L, R, all set to false to give border
-            sns.set_style=("ticks")
-            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True), fill=(False), color="black", bins=50, height=3.5, aspect=1, facet_kws=dict(margin_titles=True),)
+            sns.set_style = ("ticks")
+            g = sns.displot(pc_df, x="Feret", kind="hist", stat="percent", element="poly", log_scale=(True),
+                            fill=(False), color="black", bins=50, height=3.5, aspect=1,
+                            facet_kws=dict(margin_titles=True), )
             sns.despine(top=False, right=False, left=False, bottom=False)
-            g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)",)
+            g.set_axis_labels(x_var=f"Diameter $({args.pixel_unit})$", y_var="Number frequency (%)", )
             # set x min and max
             _min_x = 0.01
             if args.graph_min_x:
@@ -176,7 +185,6 @@ def pc_fiji_count(args):
             g.ax.set_xlim(_min_x, _max_x)
             g.ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
             g.savefig(output_figure)
-            
 
         ### remove input_path and move output_path to output, if scrach is used
         if args.scratch:
@@ -186,8 +194,6 @@ def pc_fiji_count(args):
             shutil.rmtree(output_path)
     else:
         logger.error(f"Command failed. Look at {log_file}")
-    
-
 
 
 def main(arguments=sys.argv[1:]):
@@ -197,25 +203,30 @@ def main(arguments=sys.argv[1:]):
     subparsers = parser.add_subparsers(title='sub command', help='sub command help')
     #####################################
     pc_fiji = subparsers.add_parser(
-        'pc-fiji', description='Particle counting using Fiji', help='Run particle counting using Fiji and postprocessing',
+        'pc-fiji', description='Particle counting using Fiji',
+        help='Run particle counting using Fiji and postprocessing',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     pc_fiji.set_defaults(func=pc_fiji_count)
     pc_fiji.add_argument('--fiji-path', help='Fiji path', required=False, type=str)
     pc_fiji.add_argument('--input-path', help='input path', required=True, type=str)
-    pc_fiji.add_argument('--scratch', help='scratch', type=eval, choices=[True, False],default='False')
+    pc_fiji.add_argument('--scratch', help='scratch', type=eval, choices=[True, False], default='False')
     pc_fiji.add_argument('--output-path', help='output path', required=False, type=str)
-    pc_fiji.add_argument('--keep-cropped-files', help='keeping cropped files', type=eval, choices=[True, False],default='True')
-    pc_fiji.add_argument('--keep-threshold-files', help='keeping thresholded files', type=eval, choices=[True, False],default='True')    
+    pc_fiji.add_argument('--keep-cropped-files', help='keeping cropped files', type=eval, choices=[True, False],
+                         default='True')
+    pc_fiji.add_argument('--keep-threshold-files', help='keeping thresholded files', type=eval, choices=[True, False],
+                         default='True')
     pc_fiji.add_argument('--pixel-width', help='pixel width', type=float)
     pc_fiji.add_argument('--pixel-height', help='pixel height', type=float)
     pc_fiji.add_argument('--pixel-unit', help='pixel unit', type=str, choices=['mm', 'μm', 'nm'], default='μm')
     pc_fiji.add_argument('--min-particle-size', help='the smallest particle size in pixels', type=int)
     pc_fiji.add_argument('--file-extension', help='file extension', type=str, default='tiff')
     pc_fiji.add_argument('--ignored', nargs='+', required=False, help='files to be ignored, without extension')
-    pc_fiji.add_argument('--fields', nargs='+', required=False, help='list of fields  to store in excel',\
-                        choices=["Area","Mean","StdDev","Mode","Min","Max","X","Y","XM","YM","Perim.","BX","BY","Width","Height", \
-                                "Major","Minor","Angle","Circ.","Feret","IntDen","Median","Skew","Kurt","%Area","RawIntDen",\
-                                "FeretX","FeretY","FeretAngle","MinFeret","AR","Round","Solidity"])
+    pc_fiji.add_argument('--fields', nargs='+', required=False, help='list of fields  to store in excel', \
+                         choices=["Area", "Mean", "StdDev", "Mode", "Min", "Max", "X", "Y", "XM", "YM", "Perim.", "BX",
+                                  "BY", "Width", "Height", \
+                                  "Major", "Minor", "Angle", "Circ.", "Feret", "IntDen", "Median", "Skew", "Kurt",
+                                  "%Area", "RawIntDen", \
+                                  "FeretX", "FeretY", "FeretAngle", "MinFeret", "AR", "Round", "Solidity"])
     pc_fiji.add_argument('--graph-min-x', help='minimum value for graph x axis', type=float, default=0.01)
     pc_fiji.add_argument('--graph-max-x', help='maximum value for graph x axis', type=float, default=100)
     pc_fiji.add_argument('--circularity-min', help='circularity lower limit', type=float, default=0.2)
@@ -223,7 +234,6 @@ def main(arguments=sys.argv[1:]):
     args = parser.parse_args(arguments)
     return args.func(args)
 
+
 if __name__ == "__main__":
     main()
-    
-

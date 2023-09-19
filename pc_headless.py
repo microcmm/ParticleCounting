@@ -22,7 +22,7 @@ def get_files(folder, ending='.tif'):
     Walk over the folder and find files ending in 
     """
     _files = os.listdir(folder)
-    return [ item for item in _files if item.endswith(ending) ]
+    return [item for item in _files if item.endswith(ending)]
 
 def read_metadata(_metadata_file):
     """

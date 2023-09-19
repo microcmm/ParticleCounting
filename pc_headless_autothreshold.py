@@ -1,33 +1,78 @@
-#@ String CONFIG
-from distutils import extension
-from ij import IJ, ImagePlus, measure
-import os, ConfigParser, sys, time, math, ast
+# @ String CONFIG
+import ConfigParser
+import ast
+import logging
+import os
 import os.path
-from ij.process import ImageConverter, ImageProcessor
-from ij.gui import Roi
+
+from ij import IJ, ImagePlus, measure
 from ij.plugin.filter import ParticleAnalyzer
+from ij.process import ImageConverter
 from java.lang import Double
+# from ij.gui import Roi
+
+
 ######################################################################
 ######################################################################
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [%(name)s] %(levelname)s : %(message)s')
+logger = logging.getLogger(__name__)
+
+RUN_SEQ_TEM = [
+    # ("8-bit", "stack"),
+    # ("Options...", "iterations=1 count=1 black"),
+    ("Smooth", "stack"),
+    ("Smooth", "stack"),
+    ("Mean...", "radius=25"),
+    # ("Enhance Contrast...", "saturated=4 normalize"),
+    # ("Smooth", "stack" ),
+    ("adaptiveThr ", "using=Mean from=4758 then=23"),
+    (IJ.setAutoThreshold, "Default no-reset"),
+    ("Convert to Mask", "calculate black"),
+    ("Watershed", "stack"),
+    # ("Find Edges", "stack"),
+]
+
+RUN_SEQ_NORMAL = [
+    ("Smooth", "stack"),
+    ("Sharpen", "stack"),
+    (IJ.setAutoThreshold, "Default"),
+    ("Convert to Mask", "calculate black"),
+]
+
+sequence = RUN_SEQ_NORMAL
+
 
 def get_files(folder, ending='.tif'):
     """
     Walk over the folder and find files ending in 
     """
     _files = os.listdir(folder)
-    return [ item for item in _files if item.endswith(ending) ]
+    return [item for item in _files if item.endswith(ending)]
 
 
-def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity):
+def should_ignore(hist_vals):
+    max_val = max(hist_vals)
+    idx_max = hist_vals.index(max_val)
+
+    ignore = False
+    if (idx_max == len(hist_vals) - 1):
+        ignore = True
+
+    return ignore
+
+
+def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit,
+                  minparticlesize, min_circularity):
     """
     Process file
     """
-    print ("Processing:", image)
+    print("Processing:", image)
     # make sure the image has a txt file as metadata
-    if os.path.exists(os.path.join(input_path,image)):
+    if os.path.exists(os.path.join(input_path, image)):
         _output_csv_file = os.path.join(output_path, os.path.splitext(image)[0] + '.csv')
-        print ("Processing >>>>>>>>>>>>>>", os.path.join(input_path,image))
-        img_stack = IJ.openImage( os.path.join(input_path,image) )
+        print("Processing >>>>>>>>>>>>>>", os.path.join(input_path, image))
+        img_stack = IJ.openImage(os.path.join(input_path, image))
         if img_stack.getType() != ImagePlus.GRAY8:
             imgConverter = ImageConverter(img_stack)
             imgConverter.convertToGray8()
@@ -38,69 +83,85 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         newcal.pixelHeight = pixelheight
         img_stack.setGlobalCalibration(None)
         img_stack.setCalibration(newcal)
-        IJ.run( img_stack, "Smooth", "stack" )
-        IJ.run( img_stack, "Sharpen", "stack" )
-        IJ.setAutoThreshold(img_stack, "Default")
-        IJ.run( img_stack, "Convert to Mask", "calculate black")
+
+        # apply processing sequence to image
+        for step, param in sequence:
+            if isinstance(step, str):
+                IJ.run(img_stack, step, param)
+            elif callable(step):
+                step(img_stack, param)
+
         img_stack.getProcessor().invert()
         # img_stack.show()
 
         stack = img_stack.getStack()
         if keepthresholdfiles:
             IJ.saveAsTiff(img_stack, os.path.join(output_path, os.path.splitext(image)[0] + '_threshold.tif'))
-        for i in range( 1,img_stack.getStackSize()+1):
+        for i in range(1, img_stack.getStackSize() + 1):
             # print ("i=", i)
             stack.getProcessor(i).invert()
             table = measure.ResultsTable()
-            pa = ParticleAnalyzer( #ParticleAnalyzer.SHOW_OUTLINES, # ParticleAnalyzer.BARE_OUTLINES, # 
-                               ParticleAnalyzer.SHOW_OUTLINES,
-                               measure.Measurements.ALL_STATS,
-                               table,
-                               minparticlesize,
-                               Double.POSITIVE_INFINITY,
-                               min_circularity,
-                               1.0 )
+            pa = ParticleAnalyzer(  # ParticleAnalyzer.SHOW_OUTLINES, # ParticleAnalyzer.BARE_OUTLINES, #
+                ParticleAnalyzer.SHOW_OUTLINES,
+                measure.Measurements.ALL_STATS,
+                table,
+                minparticlesize,
+                Double.POSITIVE_INFINITY,
+                min_circularity,
+                1.0)
 
             pa.setHideOutputImage(True)
             if pa.analyze(img_stack, stack.getProcessor(i)):
-                print ("All ok")
+                print("All ok")
             else:
-                print ("There was a problem in analyzing", image)
+                print("There was a problem in analyzing", image)
             # write table
             _pa_output_img = pa.getOutputImage()
             if _pa_output_img:
                 IJ.saveAsTiff(_pa_output_img, os.path.join(output_path, os.path.splitext(image)[0] + '_countmask.tif'))
             table.save(_output_csv_file)
     else:
-        print (">>>>>File ", image, " does not exist")
+        print(">>>>>File ", image, " does not exist")
 
+
+logger.info("pina")
+logger.info(os.path.exists(CONFIG))
 ### first read config file here
 if not os.path.exists(CONFIG):
-    print ("[ERROR] " + CONFIG + " not exist")
+    logger.info("[ERROR] " + CONFIG + " not exist")
+    print("[ERROR] " + CONFIG + " not exist")
     os._exit(1)
 ###
+logger.info(CONFIG)
 config = ConfigParser.ConfigParser()
 config.readfp(open(CONFIG))
 # now read the parameters
 input_path = str(config.get("npc", "input_path")).strip()
 if not os.path.exists(input_path):
-    print ("[ERROR] Input path" + input_path + " not exist")
+    print("[ERROR] Input path" + input_path + " not exist")
     os._exit(1)
+logger.info(input_path)
 output_path = str(config.get("npc", "output_path")).strip()
 if not os.path.exists(output_path):
     os.makedirs(output_path)
-keepcroppedfiles=config.getboolean("npc", "keep_cropped_files")
-keepthresholdfiles=config.getboolean("npc", "keep_threshold_files")
-pixelwidth=config.getfloat("npc", "pixelwidth")
-pixelheight=config.getfloat("npc", "pixelheight")
-pixelunit=str(config.get("npc", "pixelunit"))
-minparticlesize=config.getfloat("npc", "minparticlesize")
-fextension=str(config.get("npc", "fextension"))
+keepcroppedfiles = config.getboolean("npc", "keep_cropped_files")
+keepthresholdfiles = config.getboolean("npc", "keep_threshold_files")
+pixelwidth = config.getfloat("npc", "pixelwidth")
+pixelheight = config.getfloat("npc", "pixelheight")
+pixelunit = str(config.get("npc", "pixelunit"))
+minparticlesize = config.getfloat("npc", "minparticlesize")
+fextension = str(config.get("npc", "fextension"))
 images = get_files(input_path, '.' + fextension)
+logger.info(len(images))
 excluded = ast.literal_eval(config.get("npc", "excluded"))
-min_circularity=config.getfloat("npc", "circularity_min")
-excluded_files = [ i+"."+fextension for i in excluded ]
+logger.info(config)
+min_circularity = config.getfloat("npc", "circularity_min")
+excluded_files = [i + "." + fextension for i in excluded]
+logger.info("banana")
 ### now run it
 for image in images:
     if not image in excluded_files:
-        process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit, minparticlesize, min_circularity)
+        process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth, pixelheight, pixelunit,
+                      minparticlesize, min_circularity)
+logger.info("apple")
+IJ.run("Quit")
