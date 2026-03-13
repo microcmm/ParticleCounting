@@ -1,5 +1,6 @@
 #@ String CONFIG
 #from distutils import extension
+#import imagej
 from ij import IJ, ImagePlus, measure
 import os, ConfigParser, sys, time, math, ast
 import os.path
@@ -77,7 +78,7 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         newcal.pixelHeight = pixelheight
         img_stack.setGlobalCalibration(None)
         img_stack.setCalibration(newcal)
-        #IJ.run( img_stack, "8-bit", "stack")
+        IJ.run( img_stack, "8-bit", "stack")
         #IJ.run( img_stack, "Options...", "iterations=1 count=1 black")
        
         #IJ.run(img_stack, "Smooth", "stack")
@@ -91,8 +92,7 @@ def process_image(input_path, image, output_path, keepthresholdfiles, pixelwidth
         thr_inputs= "using=Mean from="+str(threshold)+" then="+str(subtract)
         logger.info (thr_inputs)
         #IJ.run(img_stack, "adaptiveThr ",thr_inputs )
-        IJ.setAutoThreshold(img_stack, "Default dark no-reset")
-        IJ.setRawThreshold(img_stack, 0, 72)
+        IJ.setRawThreshold(img_stack, threshold, 255)
         #( img_stack, "Threshold...", "0-88")
         IJ.run( img_stack, "Convert to Mask", "")
         IJ.run(img_stack, "Invert", "")
@@ -159,6 +159,7 @@ pixelheight=config.getfloat("npc", "pixelheight")
 pixelunit=str(config.get("npc", "pixelunit"))
 minparticlesize=config.getfloat("npc", "minparticlesize")
 fextension=str(config.get("npc", "fextension"))
+
 images = get_files(input_path, '.' + fextension)
 logger.info(len(images))
 excluded = ast.literal_eval(config.get("npc", "excluded"))

@@ -166,6 +166,7 @@ def pc_fiji_count(args):
         ### remove input_path and move output_path to output, if scrach is used
         if args.scratch:
             logger.info("Copy scratch back to output")
+            #shutil.copytree(output_path, config['npc']['output_path'])
             copy_tree(output_path, config['npc']['output_path'])
             shutil.rmtree(input_path)
             shutil.rmtree(output_path)
